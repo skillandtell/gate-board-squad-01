@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Gate Board · Hunter Association</title>
+  <meta name="description" content="Live board of active Gates and registered hunters — built by a squad of the Skill&Tell Missions.">
+  <link rel="icon" href="assets/sigil.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800&family=Jost:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- ⚠ You don't need to edit this file. Everything the board shows comes from the JSON files
+       in hunters/, data/ and config/. Read MISSION.md to know what to change. -->
+  <div id="redgate" class="redgate" hidden></div>
+
+  <header class="top">
+    <div class="brand">
+      <img src="assets/sigil.svg" alt="" class="sigil">
+      <div>
+        <p class="kicker">Hunter Association · Gate Board</p>
+        <h1 id="guild-name">…</h1>
+        <p id="guild-motto" class="motto"></p>
+      </div>
+    </div>
+    <div class="status">
+      <span id="mode" class="chip">…</span>
+      <span id="alert" class="chip">…</span>
+    </div>
+  </header>
+
+  <div id="ticker" class="ticker" hidden></div>
+
+  <main class="grid">
+    <section class="panel gates">
+      <h2><span>01</span> Active Gates</h2>
+      <div id="gates" class="gate-list"></div>
+    </section>
+
+    <section class="panel hunters">
+      <h2><span>02</span> Registered Hunters</h2>
+      <div id="hunters" class="hunter-list"></div>
+    </section>
+
+    <section class="panel control">
+      <h2><span>03</span> Mission Control</h2>
+      <p class="hint">Each issue you ship to <b>main</b> lights up a row. Fragments only appear on the <b>live</b> board — if it isn't merged, it isn't live.</p>
+      <ol id="control" class="control-list"></ol>
+      <div id="seal" class="seal" hidden></div>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <span id="sync">Connecting…</span>
+    <span>Built with Git &amp; GitHub · Skill&amp;Tell Missions · 001 First Contact</span>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
