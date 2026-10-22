@@ -1,6 +1,7 @@
 [
   { "id": "G-101", "name": "Bab Ezzouar Gate", "rank": "C", "location": "Bab Ezzouar · near USTHB", "status": "STABLE" },
   { "id": "G-102", "name": "Kasbah Underground", "rank": "B", "location": "Casbah of Algiers", "status": "UNSTABLE" },
+  { "id": "G-103", "name": "Sidi Abdellah Rift", "rank": "A", "location": "Sidi Abdellah · tech pole", "status": "GROWING" }
   { "id": "G-104", "name": "Sablettes Shoreline", "rank": "D", "location": "Les Sablettes", "status": "STABLE" },
   { "id": "G-105", "name": "Maqam Echahid Spire", "rank": "S", "location": "El Madania", "status": "CRITICAL" },
   { "id": "G-106", "name": "Hamma Garden Gate", "rank": "E", "location": "Jardin d'Essai du Hamma", "status": "STABLE" }
