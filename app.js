@@ -32,7 +32,7 @@ let apiPausedUntil = 0, BASE = "", BUST = false, SOURCE = "local files";
 async function resolveMain() {
   BASE = ""; BUST = false; SOURCE = "local files";
   if (!GH || !GH.repo) return;
-  const fallback = () => { if (ON_PAGES) { SOURCE = "deployed copy (GitHub busy)"; } else { BASE = `https://raw.githubusercontent.com/${GH.owner}/${GH.repo}/main/`; BUST = true; SOURCE = "main (GitHub busy, may lag a few minutes)"; } };
+  const fallback = () => { const back = Math.max(0, Math.ceil((apiPausedUntil - Date.now()) / 60000)); const busy = back ? `GitHub busy, instant again in ~${back} min` : "GitHub unreachable"; if (ON_PAGES) { SOURCE = `deployed copy (${busy})`; } else { BASE = `https://raw.githubusercontent.com/${GH.owner}/${GH.repo}/main/`; BUST = true; SOURCE = `main, may lag a few minutes (${busy})`; } };
   if (Date.now() < apiPausedUntil) return fallback();
   try {
     // conditional request (ETag): an unchanged main answers 304, which doesn't count against the rate limit
@@ -131,34 +131,41 @@ async function tick() {
   $("guild-motto").textContent = guild.state === "ok" ? motto || "No motto yet." : `data/guild.json · ${guild.error || guild.state}`;
   document.title = `${gname || "Gate Board"} · Gate Board`;
 
-  // ---- red gate (Issue #5 — appears during the mission)
-  const redExists = red.state !== "missing";
-  const rg = red.data || {};
-  const assigned = String(rg.assignedHunter || "").trim().replace(/^@/, "").toLowerCase();
-  const redOk = red.state === "ok" && rg.sealed === true && handles.has(assigned);
-  const banner = $("redgate");
-  banner.hidden = !redExists;
-  if (redExists) {
-    banner.className = `redgate ${redOk ? "sealed" : "open"}`;
-    banner.innerHTML = redOk
-      ? `✦ RED GATE SEALED by @${esc(assigned)} — the city is safe.`
-      : red.state !== "ok" ? `🚨 RED GATE · data/red-gate.json · ${esc(red.error || red.state)}`
-      : `🚨 RED GATE BREACH · ${esc(rg.location || "")} · rank ${esc(rg.rank || "S")} — assign a registered hunter and seal it (Issue #5)`;
-  }
-
-  // ---- mission control
+  // ---- mission control: issues #1–#4
   const rows = [
     { n: 1, title: "Register the hunters", who: "Every hunter", ok: valid.length >= MIN_HUNTERS && handles.size === valid.length, why: `${valid.length}/${MIN_HUNTERS}+ valid hunter cards` },
     { n: 2, title: "Repair the Gate Board", who: "Hunter 2", ok: gatesOk, why: gatesOk ? `${gates.data.length} gates online` : "data/gates.json is broken" },
     { n: 3, title: "Switch on the alert system", who: "Hunter 3", ok: alertOn, why: alertOn ? "alert system online" : "config/settings.json → alertSystem" },
     { n: 4, title: "Name your guild", who: "Hunter 1", ok: guildOk, why: guildOk ? `“${gname}”` : "data/guild.json → name + motto" },
   ];
-  if (redExists) rows.push({ n: 5, title: "Seal the Red Gate", who: "Hunter 4 (squad of 3: Hunter 1)", ok: redOk, why: redOk ? `sealed by @${assigned}` : "data/red-gate.json → a registered hunter, sealed: true", red: true });
+
+  // ---- red gate (Issue #5): breaks out BY ITSELF the moment rows #1–#4 are all live on main.
+  // The banner then shows a SEAL CODE unique to this squad (repo + guild name): nobody can seal it in advance.
+  const breach = rows.every((r) => r.ok);
+  const rg = red.state === "ok" ? red.data || {} : {};
+  const sealCode = seal(`J01|RED|${(GH ? GH.owner + "/" + GH.repo : "local").toLowerCase()}|${gname.toLowerCase()}`);
+  const assigned = String(rg.assignedHunter || "").trim().replace(/^@/, "").toLowerCase();
+  const codeOk = String(rg.sealCode || "").trim().toUpperCase().replace(/\s/g, "") === sealCode;
+  const redOk = breach && rg.sealed === true && handles.has(assigned) && codeOk;
+  const banner = $("redgate");
+  banner.hidden = !breach;
+  if (breach) {
+    banner.className = `redgate ${redOk ? "sealed" : "open"}`;
+    banner.innerHTML = redOk ? `✦ RED GATE SEALED by @${esc(assigned)} — the city is safe.`
+      : `🚨 RED GATE BREACH · ENSIA · Sidi Abdellah · rank S &nbsp;·&nbsp; SEAL CODE <b>${sealCode}</b> &nbsp;·&nbsp; ${
+          red.state === "broken" ? `data/red-gate.json · ${esc(red.error)}`
+          : !assigned ? `put a GitHub username from a card in "assignedHunter"`
+          : !handles.has(assigned) ? `"${esc(rg.assignedHunter)}" is not a username on this board — use ${[...handles].map((h) => "@" + esc(h)).join(" ")}`
+          : !codeOk ? `copy the seal code into "sealCode"`
+          : `set "sealed": true (no quotes)`}`;
+    rows.push({ n: 5, title: "Seal the Red Gate", who: "Hunter 4 (squad of 3: Hunter 1)", ok: redOk, red: true,
+      why: redOk ? `sealed by @${assigned}` : `data/red-gate.json → assignedHunter + sealCode ${sealCode} + sealed: true` });
+  }
   html("control", rows.map((r) => `<li class="${r.ok ? "done" : ""} ${r.red ? "red" : ""}">
       <span class="tick">${r.ok ? "✔" : "·"}</span>
       <div><strong>Issue #${r.n} · ${esc(r.title)}</strong><small>${esc(r.who)} · ${esc(r.why)}</small></div>
       <code class="frag">${r.ok ? (LIVE ? esc(reveal(F[r.n])) : "LIVE ONLY") : "▒▒▒▒▒▒"}</code>
-    </li>`).join("") + (redExists ? "" : `<li class="classified"><span class="tick">?</span><div><strong>Issue #5 · CLASSIFIED</strong><small>Keep your <code>main</code> up to date. Something is coming.</small></div><code class="frag">▒▒▒▒▒▒</code></li>`));
+    </li>`).join("") + (breach ? "" : `<li class="classified"><span class="tick">?</span><div><strong>Issue #5 · CLASSIFIED</strong><small>Opens by itself when rows #1–#4 are live. Keep your <code>main</code> pulled.</small></div><code class="frag">▒▒▒▒▒▒</code></li>`));
 
   const all = rows.length === 5 && rows.every((r) => r.ok);
   const sealBox = $("seal");
